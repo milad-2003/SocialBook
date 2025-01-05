@@ -1,4 +1,4 @@
-from django.contrib import messages
+from django.contrib import auth, messages
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 
@@ -41,3 +41,19 @@ def signup(request):
         return redirect('signup')
 
     return render(request, 'signup.html')
+
+def signin(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        
+        user = auth.authenticate(username=username, password=password)
+
+        if user is not None:
+            auth.login(request, user)
+            return redirect('/')
+        
+        messages.info(request, "Can't login with the given credentials!")
+        return redirect('signin')
+
+    return render(request, 'signin.html')
