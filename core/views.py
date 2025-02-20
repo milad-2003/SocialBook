@@ -1,14 +1,31 @@
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Profile
+from .models import Profile, Post
 
 
 @login_required(login_url='signin')
 def index(request):
-    return render(request, 'index.html')
+    user_object = User.objects.get(username=request.user.username)
+    user_profile = Profile.objects.get(user=user_object)
+    return render(request, 'index.html', {'user_profile': user_profile})
+
+@login_required(login_url='signin')
+def upload(request):
+    if request.method == 'POST':
+        user = get_object_or_404(Profile, user=request.user)
+        image = request.FILES.get('image_upload')
+        caption = request.POST['caption']
+
+        new_post = Post.objects.create(user=user, image=image, caption=caption)
+        new_post.save()
+
+        return redirect('/')
+    else:
+        return redirect('/')
 
 @login_required(login_url='signin')
 def settings(request):
