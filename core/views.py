@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Profile, Post
+from .models import Profile, Post, LikePost
 
 
 @login_required(login_url='signin')
@@ -13,6 +13,30 @@ def index(request):
     user_profile = Profile.objects.get(user=user_object)
     posts = Post.objects.all()
     return render(request, 'index.html', {'user_profile': user_profile, 'posts': posts})
+
+@login_required(login_url='signin')
+def like_post(request):
+    username = request.user.username
+    post_id = request.GET.get('post_id')
+
+    like_filter = LikePost.objects.filter(post_id=post_id, username=username).first()
+
+    post = Post.objects.get(id=post_id)
+
+    if like_filter:
+        like_filter.delete()
+        post.no_of_likes -= 1
+        post.save()
+
+        return redirect('/')
+    else:
+        new_like = LikePost.objects.create(post_id=post_id, username=username)
+        new_like.save()
+        post.no_of_likes += 1
+        post.save()
+
+        return redirect('/')
+
 
 @login_required(login_url='signin')
 def upload(request):
