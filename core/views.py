@@ -37,6 +37,21 @@ def like_post(request):
 
         return redirect('/')
 
+@login_required(login_url='signin')
+def profile(request, pk):
+    user_object = get_object_or_404(User, username=pk)
+    user_profile = get_object_or_404(Profile, user=user_object)
+    user_posts = Post.objects.filter(user=user_profile)
+    user_posts_count = len(user_posts)
+
+    context = {
+        'user_object': user_object,
+        'user_profile': user_profile,
+        'user_posts': user_posts,
+        'user_posts_count': user_posts_count
+    }
+
+    return render(request, 'profile.html', context)
 
 @login_required(login_url='signin')
 def upload(request):
