@@ -61,7 +61,7 @@ def follow_user(request):
         return redirect('/')
     
 def format_count(count, label):
-    if count == 1:
+    if count <= 1:
         return f"{count} {label}"
     elif count < 2000:
         return f"{count} {label}s"
