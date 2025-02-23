@@ -1,3 +1,5 @@
+from itertools import chain
+
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -9,10 +11,15 @@ from .models import Profile, Post, LikePost, FollowUser
 
 @login_required(login_url='signin')
 def index(request):
-    user_object = User.objects.get(username=request.user.username)
-    user_profile = Profile.objects.get(user=user_object)
-    posts = Post.objects.all()
-    return render(request, 'index.html', {'user_profile': user_profile, 'posts': posts})
+    user_object = get_object_or_404(User, username=request.user.username)
+    user_profile = get_object_or_404(Profile, user=user_object)
+
+    following_list = [user.user for user in FollowUser.objects.filter(follower=user_profile)]
+    feed_list = [Post.objects.filter(user=username) for username in following_list]
+
+    feed_list = list(chain(*feed_list))
+
+    return render(request, 'index.html', {'user_profile': user_profile, 'posts': feed_list})
 
 @login_required(login_url='signin')
 def like_post(request):
