@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Profile, Post, LikePost
+from .models import Profile, Post, LikePost, FollowUser
 
 
 @login_required(login_url='signin')
@@ -38,17 +38,64 @@ def like_post(request):
         return redirect('/')
 
 @login_required(login_url='signin')
+def follow_user(request):
+    if request.method == 'POST':
+        user = get_object_or_404(User, username=request.POST['user'])
+        follower = get_object_or_404(User, username=request.POST['follower'])
+        user_object = get_object_or_404(Profile, user=user)
+        follower_object = get_object_or_404(Profile, user=follower)
+
+        if FollowUser.objects.filter(user=user_object, follower=follower_object):
+            delete_follower = FollowUser.objects.get(user=user_object, follower=follower_object)
+            delete_follower.delete()
+            
+            return redirect('/profile/' + request.POST['user'])
+        
+        else:
+            new_follower = FollowUser.objects.create(user=user_object, follower=follower_object)
+            new_follower.save()
+
+            return redirect('/profile/' + request.POST['user'])
+        
+    else:
+        return redirect('/')
+    
+def format_count(count, label):
+    if count == 1:
+        return f"{count} {label}"
+    elif count < 2000:
+        return f"{count} {label}s"
+    elif count < 1000000:
+        return f"{count / 1000:.1f}K {label}s"
+    else:
+        return f"{count / 1000000:.1f}M {label}s"
+
+@login_required(login_url='signin')
 def profile(request, pk):
     user_object = get_object_or_404(User, username=pk)
     user_profile = get_object_or_404(Profile, user=user_object)
     user_posts = Post.objects.filter(user=user_profile)
     user_posts_count = len(user_posts)
 
+    follower = get_object_or_404(Profile, user=request.user)
+
+    button_text = 'Unfollow' if FollowUser.objects.filter(user=user_profile, follower=follower).first() else 'Follow'
+
+    follower_count = len(FollowUser.objects.filter(user=user_profile))
+    following_count = len(FollowUser.objects.filter(follower=user_profile))
+
+    follower_count_display = format_count(follower_count, "Follower")
+    following_count_display = format_count(following_count, "Following")
+
+
     context = {
         'user_object': user_object,
         'user_profile': user_profile,
         'user_posts': user_posts,
-        'user_posts_count': user_posts_count
+        'user_posts_count': user_posts_count,
+        'button_text': button_text,
+        'follower_count_display': follower_count_display,
+        'following_count_display': following_count_display
     }
 
     return render(request, 'profile.html', context)
