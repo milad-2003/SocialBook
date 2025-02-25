@@ -108,6 +108,18 @@ def profile(request, pk):
     return render(request, 'profile.html', context)
 
 @login_required(login_url='signin')
+def search(request):
+    user_profile = get_object_or_404(Profile, user=request.user)
+    if request.method == 'POST':
+        username = request.POST['username']
+        username_list = User.objects.filter(username__icontains=username)
+
+        profile_list = [Profile.objects.filter(user=user) for user in username_list]
+        profile_list = list(chain(*profile_list))
+
+    return render(request, 'search.html', {'user_profile': user_profile, 'profile_list': profile_list})
+
+@login_required(login_url='signin')
 def upload(request):
     if request.method == 'POST':
         user = get_object_or_404(Profile, user=request.user)
