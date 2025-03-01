@@ -1,4 +1,5 @@
 from itertools import chain
+import random
 
 from django.contrib import auth, messages
 from django.contrib.auth.decorators import login_required
@@ -11,15 +12,20 @@ from .models import Profile, Post, LikePost, FollowUser
 
 @login_required(login_url='signin')
 def index(request):
-    user_object = get_object_or_404(User, username=request.user.username)
-    user_profile = get_object_or_404(Profile, user=user_object)
+    user_profile = get_object_or_404(Profile, user=request.user)
 
     following_list = [user.user for user in FollowUser.objects.filter(follower=user_profile)]
     feed_list = [Post.objects.filter(user=username) for username in following_list]
 
     feed_list = list(chain(*feed_list))
 
-    return render(request, 'index.html', {'user_profile': user_profile, 'posts': feed_list})
+    # User suggestion
+    following_users = [profile.user for profile in following_list]
+    suggestion_list = Profile.objects.exclude(user__in=following_users).exclude(user=request.user)
+    suggestion_list = list(suggestion_list)
+    random.shuffle(suggestion_list)
+
+    return render(request, 'index.html', {'user_profile': user_profile, 'posts': feed_list, 'suggestion_list': suggestion_list[:4]})
 
 @login_required(login_url='signin')
 def like_post(request):
